@@ -10,7 +10,7 @@ from Service.AiService import AiService
 load_dotenv()
 
 class KafkaConsumerClient:
-    def __init__(self, bootstrap_servers="kafka:9092", group_id="my-group", topic=None):
+    def __init__(self, bootstrap_servers="localhost:9092", group_id="ai-group", topic=None):
         self.bootstrap_servers = bootstrap_servers
         self.group_id = group_id
         self.topic = topic or os.getenv("KAFKA_RESPONSE_TOPIC")
@@ -49,13 +49,26 @@ kafka_consumer = KafkaConsumerClient()
 
 async def handle_kafka_response(message):
     correlation_id = message.get("id")
-    response = message.get("question")
-    print(response)
-    ai_result = await AiService.ask_for_tips(response)
-    payload = {
-        "id": correlation_id,
-        "response": ai_result,
-    }
-    await kafka_producer.send(topic=os.getenv("KAFKA_TOPIC"), value=payload)
+    print(message)
+    if message.get("question") is not None:
+        response = message.get("question")
+        print(response)
+        ai_result = await AiService.ask_for_tips(response)
+        payload = {
+            "id": correlation_id,
+            "response": ai_result,
+        }
+        await kafka_producer.send(topic=os.getenv("KAFKA_TOPIC"), value=payload)
+
+    if message.get("tutorial") is not None:
+        response = message.get("tutorial")
+        print(response)
+        ai_result = await AiService.ask_for_recipe(response)
+        payload = {
+            "id": correlation_id,
+            "response": ai_result,
+        }
+        print(payload)
+        await kafka_producer.send(topic=os.getenv("KAFKA_TOPIC"), value=payload)
 
 
